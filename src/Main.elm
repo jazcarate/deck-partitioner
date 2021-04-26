@@ -153,7 +153,7 @@ dt =
 
 showCard : Card -> String
 showCard =
-    Debug.toString
+    .name
 
 
 main : Html msg
