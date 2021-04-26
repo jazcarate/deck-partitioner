@@ -1,6 +1,8 @@
 module Main exposing (main)
 
+import Browser
 import Html exposing (Html, text)
+import Http
 import List as L exposing (..)
 
 
@@ -156,10 +158,47 @@ showCard =
     .name
 
 
-main : Html msg
-main =
+view : a -> Html msg
+view _ =
     renderTree showCard dt
         |> unlines
         |> text
         |> singleton
         |> Html.pre []
+
+
+type alias Model =
+    ()
+
+
+type Msg
+    = GotText (Result Http.Error String)
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update _ model =
+    ( model, Cmd.none )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
+
+
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( ()
+    , Http.get
+        { url = "https://api.scryfall.com/cards/named?fuzzy=aust+com"
+        , expect = Http.expectString GotText
+        }
+    )
+
+
+main =
+    Browser.element
+        { init = init
+        , update = update
+        , subscriptions = subscriptions
+        , view = view
+        }
