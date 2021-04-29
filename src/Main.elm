@@ -277,16 +277,10 @@ whitespace =
     Parser.chompWhile (\c -> c == ' ' || c == '\t' || c == '\n' || c == '\u{000D}')
 
 
-notMoney : Parser ()
-notMoney =
-    Parser.chompIf (\c -> c == '$')
-
-
 cardsParser : Parser ( Int, String )
 cardsParser =
     Parser.succeed Tuple.pair
         |. whitespace
-        |. notMoney
         |= Parser.oneOf
             [ Parser.int
             , Parser.succeed 1
@@ -298,8 +292,9 @@ cardsParser =
         |. whitespace
         |= (Parser.getChompedString <|
                 Parser.succeed ()
-                    |. Parser.chompUntilEndOr "\n"
+                    |. Parser.chompWhile (\c -> c /= '$')
            )
+        |. Parser.end
 
 
 loadCard : CardName -> Cmd Msg

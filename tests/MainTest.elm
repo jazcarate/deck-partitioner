@@ -17,4 +17,11 @@ suite =
                         Parser.run Main.cardsParser "   $ 30.20"
                 in
                 Expect.err res
+        , test "can parse a card" <|
+            \_ ->
+                let
+                    res =
+                        Parser.run Main.cardsParser "   4x counterspell"
+                in
+                Expect.ok res
         ]
