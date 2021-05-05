@@ -17,6 +17,13 @@ suite =
                         Parser.run Main.cardsParser "   $ 30.20"
                 in
                 Expect.err res
+        , test "ignores money after tab" <|
+            \_ ->
+                let
+                    res =
+                        Parser.run Main.cardsParser "4 \tFlooded Strand \t\t$ 125.80"
+                in
+                Expect.err res
         , test "can parse a card" <|
             \_ ->
                 let
