@@ -4,19 +4,15 @@ import Browser
 import Dict exposing (Dict)
 import Errors exposing (Errors)
 import Html exposing (..)
-import Html.Attributes exposing (placeholder, selected, style, type_, value)
+import Html.Attributes exposing (placeholder, selected, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, field, string)
-import List as L exposing (..)
-import Parser exposing ((|.), (|=), Parser, number)
+import List
+import Parser exposing ((|.), (|=), Parser)
+import Partition exposing (Partition(..))
 import Set
-import String exposing (split)
-
-
-type Partition a
-    = One (List a)
-    | Many (List (Partition a))
+import String
 
 
 classifyOn : Partitioner a -> List a -> List (List a)
@@ -25,31 +21,17 @@ classifyOn field =
         classification a b =
             field.pfunc a == field.pfunc b
     in
-    classifyBy classification
+    Partition.classifyBy classification
 
 
-classifyBy : (a -> a -> Bool) -> List a -> List (List a)
-classifyBy eq l =
-    case l of
-        [] ->
-            []
-
-        x :: xs ->
-            let
-                neq a b =
-                    not (eq a b)
-            in
-            (x :: L.filter (eq x) xs) :: classifyBy eq (L.filter (neq x) xs)
-
-
-clasify : Partitioner a -> Partition a -> Partition a
-clasify field p =
+partition : Partitioner a -> Partition a -> Partition a
+partition field p =
     case p of
         One ps ->
             Many <| List.map One <| classifyOn field ps
 
         Many ts ->
-            Many (L.map (clasify field) ts)
+            Many (List.map (partition field) ts)
 
 
 type alias Card =
@@ -58,76 +40,16 @@ type alias Card =
 
 unlines : List String -> String
 unlines ls =
-    foldr (\x y -> x ++ "\n" ++ y) "" ls
+    List.foldr (\x y -> x ++ "\n" ++ y) "" ls
 
-
-pre : String -> List String -> List String
-pre p l =
-    let
-        prefix =
-            if length l < 2 then
-                singleton ("─" ++ p ++ "─")
-
-            else
-                singleton ("┌" ++ p ++ "─") ++ repeat (length l - 2) ("│ " ++ String.repeat (String.length p) " ") ++ singleton ("└─" ++ String.repeat (String.length p) "─")
-    in
-    zipWith (++) prefix l
-
-
-zipWith : (a -> b -> c) -> List a -> List b -> List c
-zipWith f als bls =
-    let
-        go =
-            zipWith f
-    in
-    case ( als, bls ) of
-        ( [], _ ) ->
-            []
-
-        ( _, [] ) ->
-            []
-
-        ( x :: xs, y :: ys ) ->
-            f x y :: go xs ys
-
-
-renderPartition : (a -> String) -> Partition a -> List String
-renderPartition show tree =
-    case tree of
-        One leaves ->
-            L.map show leaves
-                |> pre (String.fromFloat (cost_ tree))
-
-        Many ts ->
-            intersperse (singleton "") (L.map (renderPartition show) ts)
-                |> concat
-                |> pre (String.fromFloat (cost_ tree))
-
-
-intersperse : a -> List a -> List a
-intersperse sep ls =
-    case ls of
-        [] ->
-            []
-
-        x :: xs ->
-            x :: prependToAll sep xs
-
-
-prependToAll : a -> List a -> List a
-prependToAll sep ls =
-    case ls of
-        [] ->
-            []
-
-        x :: xs ->
-            sep :: x :: prependToAll sep xs
 
 
 showCard : Card -> String
 showCard =
     .name
 
+showPartitionMeta : Partition Card -> String
+showPartitionMeta = cost_ >> String.fromFloat
 
 deckExample : String
 deckExample =
@@ -212,7 +134,7 @@ permutations xs_ =
                 f ( y, ys ) =
                     List.map ((::) y) (permutations ys)
             in
-            concatMap f (select xs)
+            List.concatMap f (select xs)
 
 
 subsequences : List a -> List (List a)
@@ -231,7 +153,7 @@ subsequencesNonEmpty list =
                 f ys r =
                     ys :: (first :: ys) :: r
             in
-            [ first ] :: foldr f [] (subsequencesNonEmpty rest)
+            [ first ] :: List.foldr f [] (subsequencesNonEmpty rest)
 
 
 select : List a -> List ( a, List a )
@@ -257,15 +179,15 @@ partitionBy pts cards =
         allPts =
             List.append pts [ namePartition ]
     in
-    List.foldl clasify (One cards) allPts
+    List.foldl partition (One cards) allPts
 
 
 showPartition : Partition Card -> Html msg
-showPartition partition =
-    renderPartition showCard partition
+showPartition p =
+    Partition.renderPartition showCard showPartitionMeta p
         |> unlines
         |> text
-        |> singleton
+        |> List.singleton
         |> Html.pre []
 
 
@@ -502,12 +424,12 @@ removeAt index l =
         l
 
     else
-        case drop index l of
+        case List.drop index l of
             [] ->
                 l
 
             _ :: rest ->
-                take index l ++ rest
+                List.take index l ++ rest
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -563,7 +485,7 @@ update msg model =
 cost_ : Partition a -> Float
 cost_ t =
     case t of
-        One ls ->
+        One _ ->
             1
 
         Many ls ->
