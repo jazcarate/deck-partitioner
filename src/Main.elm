@@ -11,11 +11,12 @@ import Json.Decode exposing (Decoder, field, string)
 import List as L exposing (..)
 import Parser exposing ((|.), (|=), Parser, number)
 import Set
+import String exposing (split)
 
 
-type Tree a
+type Partition a
     = One (List a)
-    | Many (List (Tree a))
+    | Many (List (Partition a))
 
 
 classifyOn : Partitioner a -> List a -> List (List a)
@@ -41,11 +42,11 @@ classifyBy eq l =
             (x :: L.filter (eq x) xs) :: classifyBy eq (L.filter (neq x) xs)
 
 
-clasify : Partitioner a -> Tree a -> Tree a
-clasify field tree =
-    case tree of
-        One leaves ->
-            Many (L.map One (classifyOn field leaves))
+clasify : Partitioner a -> Partition a -> Partition a
+clasify field p =
+    case p of
+        One ps ->
+            Many <| List.map One <| classifyOn field ps
 
         Many ts ->
             Many (L.map (clasify field) ts)
@@ -90,17 +91,17 @@ zipWith f als bls =
             f x y :: go xs ys
 
 
-renderTree : (a -> String) -> Tree a -> List String
-renderTree show tree =
+renderPartition : (a -> String) -> Partition a -> List String
+renderPartition show tree =
     case tree of
         One leaves ->
             L.map show leaves
-                |> pre (String.fromInt (cost_ tree))
+                |> pre (String.fromFloat (cost_ tree))
 
         Many ts ->
-            intersperse (singleton "") (L.map (renderTree show) ts)
+            intersperse (singleton "") (L.map (renderPartition show) ts)
                 |> concat
-                |> pre (String.fromInt (cost_ tree))
+                |> pre (String.fromFloat (cost_ tree))
 
 
 intersperse : a -> List a -> List a
@@ -179,14 +180,14 @@ viewInner model =
                     ]
                 , div [] [ button [ onClick (Partitions PAdd) ] [ text "add partition" ] ]
                 , div [] [ button [ onClick FindBest ] [ text "Find best partition" ] ]
-                , div [] [ text <| "Cost: " ++ String.fromInt (cost tree) ]
+                , div [] [ text <| "Cost: " ++ String.fromFloat (cost tree) ]
                 , span [] <|
                     if List.length cards < List.length model.deck then
                         [ text <| "missing " ++ String.fromInt (List.length model.deck - List.length cards) ++ " cards" ]
 
                     else
                         [ text <| "complete!" ]
-                , showTree tree
+                , showPartition tree
                 ]
 
 
@@ -250,7 +251,7 @@ viewOption i sel p =
         [ text <| p.pname ]
 
 
-partitionBy : List (Partitioner Card) -> List Card -> Tree Card
+partitionBy : List (Partitioner Card) -> List Card -> Partition Card
 partitionBy pts cards =
     let
         allPts =
@@ -259,9 +260,9 @@ partitionBy pts cards =
     List.foldl clasify (One cards) allPts
 
 
-showTree : Tree Card -> Html msg
-showTree partition =
-    renderTree showCard partition
+showPartition : Partition Card -> Html msg
+showPartition partition =
+    renderPartition showCard partition
         |> unlines
         |> text
         |> singleton
@@ -540,33 +541,32 @@ update msg model =
             ( { model | errors = Errors.add "Shoudnt have gootten a message in this state" model.errors }, Cmd.none )
 
 
-cost_ : Tree a -> Int
+cost_ : Partition a -> Float
 cost_ t =
     case t of
-        One _ ->
-            children t
+        One ls ->
+            1
 
         Many ls ->
-            List.sum (List.map children ls)
-                * (List.length ls * 2)
+            toFloat (List.length ls) / 2
 
 
-cost : Tree a -> Int
-cost t =
-    fold cost_ t + depth t
+cost : Partition a -> Float
+cost =
+    fold (\c -> toFloat (children c) * cost_ c)
 
 
-fold : (Tree a -> Int) -> Tree a -> Int
+fold : (Partition a -> Float) -> Partition a -> Float
 fold f t =
     case t of
         One _ ->
             f t
 
         Many ls ->
-            List.sum (List.map f ls) + (List.foldl (+) 0 <| List.map (fold f) ls)
+            f t + List.sum (List.map (fold f) ls)
 
 
-sum : (a -> Int) -> Tree a -> Int
+sum : (a -> Int) -> Partition a -> Int
 sum f t =
     case t of
         One ls ->
@@ -576,7 +576,7 @@ sum f t =
             List.sum (List.map (sum f) ls)
 
 
-depth : Tree a -> Int
+depth : Partition a -> Int
 depth t =
     case t of
         One _ ->
@@ -586,14 +586,14 @@ depth t =
             1 + List.foldl max 0 (List.map depth ls)
 
 
-children : Tree a -> Int
+children : Partition a -> Int
 children t =
     case t of
         One ls ->
             List.length ls
 
         Many ls ->
-            List.foldl (+) 0 (List.map children ls)
+            List.sum <| List.map children ls
 
 
 findBestPartition : Model -> List (Partitioner Card)
