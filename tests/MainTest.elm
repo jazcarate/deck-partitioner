@@ -1,7 +1,6 @@
 module MainTest exposing (..)
 
-import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, list, string)
+import Expect
 import Main
 import Parser
 import Test exposing (..)
@@ -21,14 +20,14 @@ suite =
             \_ ->
                 let
                     res =
-                        Parser.run Main.cardsParser "4 \tFlooded Strand \t\t$ 125.80"
+                        Parser.run Main.cardsParser "4 \tFlooded Strand  \t$ 30.44"
                 in
-                Expect.err res
+                Expect.equal res (Ok (4, "Flooded Strand"))
         , test "can parse a card" <|
             \_ ->
                 let
                     res =
                         Parser.run Main.cardsParser "   4x counterspell"
                 in
-                Expect.ok res
+                Expect.equal res (Ok (4, "counterspell"))
         ]

@@ -394,11 +394,30 @@ cardsParser =
             , Parser.succeed ()
             ]
         |. whitespace
-        |= (Parser.getChompedString <|
-                Parser.succeed ()
-                    |. Parser.chompWhile (\c -> c /= '$' || c /= '\t')
-           )
+        |= notEmpty
+            (Parser.map String.trim <|
+                Parser.getChompedString <|
+                    Parser.succeed ()
+                        |. Parser.chompWhile (\c -> c /= '$')
+            )
+        |. Parser.oneOf
+            [ Parser.symbol "$"
+                |. Parser.chompUntilEndOr "\n"
+            , Parser.succeed ()
+            ]
         |. Parser.end
+
+
+notEmpty : Parser String -> Parser String
+notEmpty =
+    Parser.andThen
+        (\s ->
+            if String.isEmpty s then
+                Parser.problem "the string was empty"
+
+            else
+                Parser.succeed s
+        )
 
 
 loadCard : CardName -> Cmd Msg
