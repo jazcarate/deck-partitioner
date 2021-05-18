@@ -43,13 +43,10 @@ unlines ls =
     List.foldr (\x y -> x ++ "\n" ++ y) "" ls
 
 
-
 showCard : Card -> String
 showCard =
     .name
 
-showPartitionMeta : Partition Card -> String
-showPartitionMeta = cost_ >> String.fromFloat
 
 deckExample : String
 deckExample =
@@ -102,7 +99,7 @@ viewInner model =
                     ]
                 , div [] [ button [ onClick (Partitions PAdd) ] [ text "add partition" ] ]
                 , div [] [ button [ onClick FindBest ] [ text "Find best partition" ] ]
-                , div [] [ text <| "Cost: " ++ String.fromFloat (cost tree) ]
+                , div [] [ text <| "Cost: " ++ String.fromFloat (Partition.cost tree) ]
                 , span [] <|
                     if List.length cards < List.length model.deck then
                         [ text <| "missing " ++ String.fromInt (List.length model.deck - List.length cards) ++ " cards" ]
@@ -184,7 +181,7 @@ partitionBy pts cards =
 
 showPartition : Partition Card -> Html msg
 showPartition p =
-    Partition.renderPartition showCard showPartitionMeta p
+    Partition.renderPartition showCard p
         |> unlines
         |> text
         |> List.singleton
@@ -482,61 +479,6 @@ update msg model =
             ( { model | errors = Errors.add "Shoudnt have gootten a message in this state" model.errors }, Cmd.none )
 
 
-cost_ : Partition a -> Float
-cost_ t =
-    case t of
-        One _ ->
-            1
-
-        Many ls ->
-            toFloat (List.length ls) / 2
-
-
-cost : Partition a -> Float
-cost =
-    fold (\c -> toFloat (children c) * cost_ c)
-
-
-fold : (Partition a -> Float) -> Partition a -> Float
-fold f t =
-    case t of
-        One _ ->
-            f t
-
-        Many ls ->
-            f t + List.sum (List.map (fold f) ls)
-
-
-sum : (a -> Int) -> Partition a -> Int
-sum f t =
-    case t of
-        One ls ->
-            List.sum <| List.map f ls
-
-        Many ls ->
-            List.sum (List.map (sum f) ls)
-
-
-depth : Partition a -> Int
-depth t =
-    case t of
-        One _ ->
-            0
-
-        Many ls ->
-            1 + List.foldl max 0 (List.map depth ls)
-
-
-children : Partition a -> Int
-children t =
-    case t of
-        One ls ->
-            List.length ls
-
-        Many ls ->
-            List.sum <| List.map children ls
-
-
 findBestPartition : Model -> List (Partitioner Card)
 findBestPartition model =
     let
@@ -544,7 +486,7 @@ findBestPartition model =
             lookupCards model.db model.deck
     in
     (\x -> List.concatMap subsequences (permutations x)) partitions
-        |> List.sortBy (\parts -> cost <| partitionBy parts cards)
+        |> List.sortBy (\parts -> Partition.cost <| partitionBy parts cards)
         |> List.head
         |> Maybe.withDefault []
 
