@@ -286,13 +286,13 @@ uncurry f ( a, b ) =
 
 
 deadEndsToString : List Parser.DeadEnd -> String
-deadEndsToString =
-    Debug.toString
+deadEndsToString _ =
+    "Problem"
 
 
 httpErrorsToString : Http.Error -> String
-httpErrorsToString =
-    Debug.toString
+httpErrorsToString _ =
+    "Cound't fetch"
 
 
 whitespace : Parser ()
