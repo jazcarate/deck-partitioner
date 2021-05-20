@@ -35,7 +35,7 @@ partition field p =
 
 
 type alias Card =
-    { color : String, cmc : String, name : String }
+    { color : String, cmc : String, name : String, rarity : String, type_line : String }
 
 
 unlines : List String -> String
@@ -345,10 +345,24 @@ loadCard name =
 
 cardDecoder : Decoder Card
 cardDecoder =
-    Json.Decode.map3 (\color_ cmc_ name_ -> { color = color_, cmc = cmc_, name = name_ })
+    Json.Decode.map5 (\color_ cmc_ name_ rarity_ type_line_ -> { color = color_, cmc = cmc_, name = name_, rarity = rarity_, type_line = type_line_ })
         (Json.Decode.map (Maybe.withDefault "") <| Json.Decode.maybe <| Json.Decode.field "colors" colorsDecode)
         (Json.Decode.map String.fromInt <| Json.Decode.field "cmc" Json.Decode.int)
         (Json.Decode.field "name" string)
+        (Json.Decode.field "rarity" string)
+        (Json.Decode.map typeClosure <| Json.Decode.field "type_line" string)
+
+
+typeClosure : String -> String
+typeClosure type_line =
+    if String.startsWith "Basic Land" type_line || String.startsWith "Land" type_line then
+        "Land"
+
+    else
+        String.split "—" type_line
+            |> List.head
+            |> Maybe.map String.trim
+            |> Maybe.withDefault type_line
 
 
 colorsDecode : Decoder String
@@ -374,7 +388,11 @@ namePartition =
 
 partitions : List (Partitioner Card)
 partitions =
-    [ defaultPartition, { pfunc = .color, pname = "by color" } ]
+    [ defaultPartition
+    , { pfunc = .color, pname = "by color" }
+    , { pfunc = .rarity, pname = "by rarity" }
+    , { pfunc = .type_line, pname = "by type" }
+    ]
 
 
 updatePartition : PartitionMsg -> PartitionModel -> PartitionModel
