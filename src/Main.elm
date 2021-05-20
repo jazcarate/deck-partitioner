@@ -216,7 +216,7 @@ type alias Partitioner a =
 
 
 type Msg
-    = GotCard (Result Http.Error ( CardName, Card ))
+    = GotCard CardName (Result Http.Error Card)
     | Change String
     | LoadCards
     | Edit
@@ -262,16 +262,22 @@ type alias CardName =
     String
 
 
+parserRunSimple : Parser a -> String -> Result String a
+parserRunSimple parser input =
+    Parser.run parser input
+        |> Result.mapError (\_ -> "coudn't parse [" ++ input ++ "]")
+
+
 parseDeck : String -> MultiResult (List String) (List CardName)
 parseDeck content =
     let
         cards =
             String.split "\n" content
                 |> List.filter (not << String.isEmpty)
-                |> List.map (Parser.run cardsParser)
+                |> List.map (parserRunSimple cardsParser)
                 |> accumulate
     in
-    mapMR (List.map deadEndsToString) multiply cards
+    mapMR identity multiply cards
 
 
 multiply : List ( Int, a ) -> List a
@@ -283,16 +289,6 @@ multiply =
 uncurry : (a -> b -> c) -> (( a, b ) -> c)
 uncurry f ( a, b ) =
     f a b
-
-
-deadEndsToString : List Parser.DeadEnd -> String
-deadEndsToString _ =
-    "Problem"
-
-
-httpErrorsToString : Http.Error -> String
-httpErrorsToString _ =
-    "Cound't fetch"
 
 
 whitespace : Parser ()
@@ -343,7 +339,7 @@ loadCard : CardName -> Cmd Msg
 loadCard name =
     Http.get
         { url = "https://api.scryfall.com/cards/named?fuzzy=" ++ name
-        , expect = Http.expectJson (GotCard << Result.map (Tuple.pair name)) cardDecoder
+        , expect = Http.expectJson (GotCard name) cardDecoder
         }
 
 
@@ -464,12 +460,12 @@ update msg model =
             , Cmd.batch <| List.map loadCard <| unique missingCards
             )
 
-        ( GotCard res, _ ) ->
+        ( GotCard name res, _ ) ->
             case res of
-                Err e ->
-                    ( { model | errors = Errors.add (httpErrorsToString e) model.errors }, Cmd.none )
+                Err _ ->
+                    ( { model | errors = Errors.add ("Coudn't get [" ++ name ++ "]") model.errors }, Cmd.none )
 
-                Ok ( name, card ) ->
+                Ok card ->
                     ( { model | db = Dict.insert name card model.db }, Cmd.none )
 
         ( FindBest, _ ) ->
