@@ -1,4 +1,6 @@
 module Partition exposing (..)
+
+
 type Partition a
     = One (List a)
     | Many (List (Partition a))
@@ -20,19 +22,23 @@ classifyBy eq l =
 
 renderPartition : (a -> String) -> Partition a -> List String
 renderPartition show tree =
-        let
-            go =
-                renderPartition show
-            meta = cost_ >> String.fromFloat
-        in case tree of
-            One leaves ->
-                List.map show leaves
-                    |> pre (meta tree)
+    let
+        go =
+            renderPartition show
 
-            Many ts ->
-                List.intersperse [ "" ] (List.map go ts)
-                    |> List.concat
-                    |> pre (meta tree)
+        meta =
+            cost_ >> String.fromFloat
+    in
+    case tree of
+        One leaves ->
+            List.map show leaves
+                |> pre
+
+        Many ts ->
+            List.intersperse [ "" ] (List.map go ts)
+                |> List.concat
+                |> pre
+
 
 cost_ : Partition a -> Float
 cost_ t =
@@ -68,15 +74,16 @@ children t =
         Many ls ->
             List.sum <| List.map children ls
 
-pre : String -> List String -> List String
-pre p l =
+
+pre : List String -> List String
+pre l =
     let
         prefix =
             if List.length l < 2 then
-                [ "─" ++ p ++ "─" ]
+                [ "──" ]
 
             else
-                ("┌" ++ p ++ "─") :: List.repeat (List.length l - 2) ("│ " ++ String.repeat (String.length p) " ") ++ [ "└─" ++ String.repeat (String.length p) "─" ]
+                ("┌──") :: List.repeat (List.length l - 2) ("│  ") ++ [ "└──" ]
     in
     zipWith (++) prefix l
 
