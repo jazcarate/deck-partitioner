@@ -5,5 +5,4 @@
 1. `$ npm run start`
 
 ## TODO
-2. https://nostalgic-css.github.io/NES.css/
-3. Cambiar el arbol a usar HTML para ponerle titulos o imagenes
+1. https://nostalgic-css.github.io/NES.css/

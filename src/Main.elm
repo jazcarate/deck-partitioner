@@ -61,16 +61,16 @@ deckExample =
 view : Model -> Html Msg
 view m =
     div []
-        [ if Errors.isEmpty m.errors then
+        [ viewInner m
+        , if Errors.isEmpty m.errors then
             span [] []
 
           else
             div []
-                [ h3 [] [ text "errors" ]
+                [ hr [] []
+                , h3 [] [ text "Errors" ]
                 , code [] [ text <| unlines <| Errors.toStrings m.errors ]
-                , hr [] []
                 ]
-        , viewInner m
         ]
 
 
