@@ -80,7 +80,7 @@ pre l =
     let
         prefix =
             if List.length l < 2 then
-                [ "──" ]
+                [ "───" ]
 
             else
                 ("┌──") :: List.repeat (List.length l - 2) ("│  ") ++ [ "└──" ]
