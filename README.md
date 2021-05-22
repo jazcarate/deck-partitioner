@@ -5,4 +5,6 @@
 1. `$ npm run start`
 
 ## TODO
-1. https://nostalgic-css.github.io/NES.css/
+1. Text area más grande
+2. desciprción
+3. algo de estilo?

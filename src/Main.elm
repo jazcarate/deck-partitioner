@@ -100,7 +100,7 @@ viewInner model =
                     , span [] [ text "by name" ]
                     ]
                 , div [] [ button [ onClick (Partitions PAdd) ] [ text "add partition" ] ]
-                , div [] [ button [ onClick FindBest ] [ text "Find best partition" ] ]
+                , div [] [ button [ onClick FindBest ] [ text "Find best partition" ], text "(this will take a while)" ]
                 , div [] [ text <| "Total cost: " ++ String.fromFloat (Partition.cost tree) ]
                 , span [] <|
                     if List.length cards < List.length model.deck then
