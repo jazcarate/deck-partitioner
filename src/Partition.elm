@@ -1,6 +1,7 @@
 module Partition exposing (..)
 
-import Html exposing (Html, text)
+import Html exposing (Html, span, text)
+import Html.Attributes exposing (title)
 
 
 type Partition a
@@ -27,17 +28,25 @@ renderPartition show tree =
     let
         go =
             renderPartition show
+
+        reason =
+            String.concat
+                [ "cost="
+                , String.fromFloat <| cost_ tree
+                , "x"
+                , String.fromInt <| children tree
+                ]
     in
     case tree of
         One leaves ->
             List.map show leaves
-                |> pre (text "─")
+                |> pre reason
 
         Many ts ->
             List.map go ts
                 |> List.intersperse [ Html.text "" ]
                 |> List.concat
-                |> pre (text "1")
+                |> pre reason
 
 
 cost_ : Partition a -> Float
@@ -75,17 +84,17 @@ children t =
             List.sum <| List.map children ls
 
 
-pre : Html msg -> List (Html msg) -> List (Html msg)
+pre : String -> List (Html msg) -> List (Html msg)
 pre p l =
     let
         prefix =
             if List.length l < 2 then
-                [ text "───", p, text "─" ]
+                [ text "───" ]
 
             else
-                Html.span [] [ Html.text "┌", p, text "─" ] :: (List.map Html.text <| List.repeat (List.length l - 2) "│  ") ++ [ Html.text "└──" ]
+                Html.span [] [ Html.text "┌──" ] :: (List.map Html.text <| List.repeat (List.length l - 2) "│  ") ++ [ Html.text "└──" ]
     in
-    zipWith (\a b -> Html.span [] [ a, b ]) prefix l
+    zipWith (\a b -> Html.span [ title p ] [ a, b ]) prefix l
 
 
 zipWith : (a -> b -> c) -> List a -> List b -> List c
