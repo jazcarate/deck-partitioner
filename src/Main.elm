@@ -70,7 +70,7 @@ view m =
             div []
                 [ hr [] []
                 , h3 [] [ text "Errors" ]
-                , code [] [ text <| unlines <| Errors.toStrings m.errors ]
+                , ul [] (List.map (\l -> li [] [ text l ]) (Errors.toStrings m.errors))
                 ]
         ]
 
@@ -88,6 +88,7 @@ viewInner model =
             let
                 cards =
                     lookupCards model.db model.deck
+                        |> List.filter (\c -> c.type_line /= "Card")
 
                 tree =
                     partitionBy model.partition cards
@@ -276,30 +277,10 @@ parseDeck content =
             String.split "\n" content
                 |> List.map String.trim
                 |> List.filter (not << String.isEmpty)
-                |> List.filter
-                    (\c ->
-                        not <|
-                            List.any (ignoreCard c)
-                                [ "lands"
-                                , "companion"
-                                , "spells"
-                                , "artifacts"
-                                , "creatures"
-                                , "planeswalkers"
-                                , "sideboard"
-                                , "enchantments"
-                                , "artifacts"
-                                ]
-                    )
                 |> List.map (parserRunSimple cardsParser)
                 |> accumulate
     in
     mapMR identity multiply cards
-
-
-ignoreCard : CardName -> String -> Bool
-ignoreCard needle haystack =
-    String.startsWith (String.toLower haystack ++ " ") (String.toLower needle)
 
 
 multiply : List ( Int, a ) -> List a
