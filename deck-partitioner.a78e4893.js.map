@@ -1,1 +1,0 @@
-{"version":3,"sources":["index.js"],"names":["Elm","Main","init","node","document","getElementById"],"mappings":";;;AAEA,aAFA,IAAA,EAAA,QAAA,kBAEAA,EAAIC,IAAAA,KAAKC,KAAK,CACVC,KAAMC,SAASC,eAAe","file":"deck-partitioner.a78e4893.js","sourceRoot":"..","sourcesContent":["import { Elm } from './src/Main.elm'\n\nElm.Main.init({\n    node: document.getElementById('main'),\n});"]}
