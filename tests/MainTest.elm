@@ -22,12 +22,12 @@ suite =
                     res =
                         Parser.run Main.cardsParser "4 \tFlooded Strand  \t$ 30.44"
                 in
-                Expect.equal res (Ok (4, "Flooded Strand"))
+                Expect.equal res (Ok ( 4, "Flooded Strand" ))
         , test "can parse a card" <|
             \_ ->
                 let
                     res =
                         Parser.run Main.cardsParser "   4x counterspell"
                 in
-                Expect.equal res (Ok (4, "counterspell"))
+                Expect.equal res (Ok ( 4, "counterspell" ))
         ]

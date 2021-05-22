@@ -22,6 +22,7 @@ classifyOn field =
             field.pfunc a == field.pfunc b
     in
     Partition.classifyBy classification
+        >> List.map (List.sortBy field.pfunc)
 
 
 partition : Partitioner a -> Partition a -> Partition a
@@ -274,10 +275,30 @@ parseDeck content =
         cards =
             String.split "\n" content
                 |> List.filter (not << String.isEmpty)
+                |> List.filter
+                    (\c ->
+                        not <|
+                            List.any (ignoreCard c)
+                                [ "lands"
+                                , "companion"
+                                , "spells"
+                                , "artifacts"
+                                , "creatures"
+                                , "planeswalkers"
+                                , "sideboard"
+                                , "enchantments"
+                                , "artifacts"
+                                ]
+                    )
                 |> List.map (parserRunSimple cardsParser)
                 |> accumulate
     in
     mapMR identity multiply cards
+
+
+ignoreCard : CardName -> String -> Bool
+ignoreCard needle haystack =
+    String.startsWith (String.toLower haystack ++ " ") (String.toLower needle)
 
 
 multiply : List ( Int, a ) -> List a
