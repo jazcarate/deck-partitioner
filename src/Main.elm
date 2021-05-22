@@ -412,7 +412,28 @@ partitions =
     [ defaultPartition
     , { pfunc = .color, pname = "by color" }
     , { pfunc = .type_line, pname = "by type" }
+    , { pfunc = landiness, pname = "land/non-land" }
+    , { pfunc = colorness, pname = "mono/multi colored" }
     ]
+
+
+landiness : Card -> String
+landiness c =
+    case c.type_line of
+        "Land" ->
+            "Land"
+
+        _ ->
+            "Non-Land"
+
+
+colorness : Card -> String
+colorness c =
+    if String.length c.color > 1 then
+        "multicolor"
+
+    else
+        "monocolored"
 
 
 updatePartition : PartitionMsg -> PartitionModel -> PartitionModel
