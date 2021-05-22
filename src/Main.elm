@@ -274,6 +274,7 @@ parseDeck content =
     let
         cards =
             String.split "\n" content
+                |> List.map String.trim
                 |> List.filter (not << String.isEmpty)
                 |> List.filter
                     (\c ->
