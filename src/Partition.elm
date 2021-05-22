@@ -56,7 +56,7 @@ cost_ t =
             1
 
         Many ls ->
-            toFloat (List.length ls) / 2
+            toFloat <| List.length ls
 
 
 cost : Partition a -> Float
