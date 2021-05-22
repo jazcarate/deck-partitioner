@@ -1,5 +1,7 @@
 module Partition exposing (..)
 
+import Html exposing (Html, text)
+
 
 type Partition a
     = One (List a)
@@ -20,24 +22,22 @@ classifyBy eq l =
             (x :: List.filter (eq x) xs) :: classifyBy eq (List.filter (neq x) xs)
 
 
-renderPartition : (a -> String) -> Partition a -> List String
+renderPartition : (a -> Html msg) -> Partition a -> List (Html msg)
 renderPartition show tree =
     let
         go =
             renderPartition show
-
-        meta =
-            cost_ >> String.fromFloat
     in
     case tree of
         One leaves ->
             List.map show leaves
-                |> pre
+                |> pre (text "─")
 
         Many ts ->
-            List.intersperse [ "" ] (List.map go ts)
+            List.map go ts
+                |> List.intersperse [ Html.text "" ]
                 |> List.concat
-                |> pre
+                |> pre (text "1")
 
 
 cost_ : Partition a -> Float
@@ -75,17 +75,17 @@ children t =
             List.sum <| List.map children ls
 
 
-pre : List String -> List String
-pre l =
+pre : Html msg -> List (Html msg) -> List (Html msg)
+pre p l =
     let
         prefix =
             if List.length l < 2 then
-                [ "───" ]
+                [ text "───", p, text "─" ]
 
             else
-                ("┌──") :: List.repeat (List.length l - 2) ("│  ") ++ [ "└──" ]
+                Html.span [] [ Html.text "┌", p, text "─" ] :: (List.map Html.text <| List.repeat (List.length l - 2) "│  ") ++ [ Html.text "└──" ]
     in
-    zipWith (++) prefix l
+    zipWith (\a b -> Html.span [] [ a, b ]) prefix l
 
 
 zipWith : (a -> b -> c) -> List a -> List b -> List c

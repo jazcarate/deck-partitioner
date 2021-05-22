@@ -15,6 +15,10 @@ import Set
 import String
 
 
+type alias Partitioner a =
+    { pfunc : a -> String, pname : String }
+
+
 classifyOn : Partitioner a -> List a -> List (List a)
 classifyOn field =
     let
@@ -44,9 +48,9 @@ unlines ls =
     List.foldr (\x y -> x ++ "\n" ++ y) "" ls
 
 
-showCard : Card -> String
-showCard =
-    .name
+showCard : Card -> Html msg
+showCard c =
+    em [] [ text <| " " ++ c.name ]
 
 
 deckExample : String
@@ -184,9 +188,7 @@ partitionBy pts cards =
 showPartition : Partition Card -> Html msg
 showPartition p =
     Partition.renderPartition showCard p
-        |> unlines
-        |> text
-        |> List.singleton
+        |> List.map (div [] << List.singleton)
         |> Html.pre []
 
 
@@ -207,14 +209,6 @@ type alias Model =
     , deck : List CardName
     , partition : PartitionModel
     }
-
-
-type alias Comparable =
-    String
-
-
-type alias Partitioner a =
-    { pfunc : a -> Comparable, pname : String }
 
 
 type Msg
