@@ -35,7 +35,7 @@ partition field p =
 
 
 type alias Card =
-    { color : String, cmc : String, name : String, rarity : String, type_line : String }
+    { color : String, cmc : String, name : String, type_line : String }
 
 
 unlines : List String -> String
@@ -293,7 +293,7 @@ uncurry f ( a, b ) =
 
 whitespace : Parser ()
 whitespace =
-    Parser.chompWhile (\c -> c == ' ' || c == '\t' || c == '\n' || c == '\u{000D}')
+    Parser.chompWhile (\c -> List.member c [ ' ', '\t', '\n', '\u{000D}', '┌', '─', '─' ])
 
 
 cardsParser : Parser ( Int, String )
@@ -345,11 +345,10 @@ loadCard name =
 
 cardDecoder : Decoder Card
 cardDecoder =
-    Json.Decode.map5 (\color_ cmc_ name_ rarity_ type_line_ -> { color = color_, cmc = cmc_, name = name_, rarity = rarity_, type_line = type_line_ })
+    Json.Decode.map4 (\color_ cmc_ name_ type_line_ -> { color = color_, cmc = cmc_, name = name_, type_line = type_line_ })
         (Json.Decode.map (Maybe.withDefault "") <| Json.Decode.maybe <| Json.Decode.field "colors" colorsDecode)
         (Json.Decode.map String.fromInt <| Json.Decode.field "cmc" Json.Decode.int)
         (Json.Decode.field "name" string)
-        (Json.Decode.field "rarity" string)
         (Json.Decode.map typeClosure <| Json.Decode.field "type_line" string)
 
 
@@ -390,7 +389,6 @@ partitions : List (Partitioner Card)
 partitions =
     [ defaultPartition
     , { pfunc = .color, pname = "by color" }
-    , { pfunc = .rarity, pname = "by rarity" }
     , { pfunc = .type_line, pname = "by type" }
     ]
 
