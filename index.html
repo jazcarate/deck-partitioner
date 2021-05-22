@@ -6,6 +6,32 @@
     <title>Deck Partitioner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style>
+        /* Tooltip container */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            padding: 5px 0;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+            top: -5px;
+            left: 105%;
+        }
+
+        .tooltip .tooltiptext img {
+            height: 50vh;
+            width: auto;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+        }
+    </style>
 </head>
 
 <body>

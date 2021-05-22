@@ -4,7 +4,7 @@ import Browser
 import Dict exposing (Dict)
 import Errors exposing (Errors)
 import Html exposing (..)
-import Html.Attributes exposing (placeholder, selected, type_, value)
+import Html.Attributes exposing (attribute, class, height, placeholder, selected, src, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, field, string)
@@ -40,7 +40,7 @@ partition field p =
 
 
 type alias Card =
-    { color : String, cmc : String, name : String, type_line : String }
+    { color : String, cmc : String, name : String, type_line : String, image_uri : String }
 
 
 unlines : List String -> String
@@ -50,7 +50,10 @@ unlines ls =
 
 showCard : Card -> Html msg
 showCard c =
-    em [] [ text <| " " ++ c.name ]
+    em [ class "tooltip" ]
+        [ text <| c.name
+        , span [ class "tooltiptext" ] [ img [ src c.image_uri, attribute "loading" "lazy" ] [] ]
+        ]
 
 
 deckExample : String
@@ -342,11 +345,12 @@ loadCard name =
 
 cardDecoder : Decoder Card
 cardDecoder =
-    Json.Decode.map4 (\color_ cmc_ name_ type_line_ -> { color = color_, cmc = cmc_, name = name_, type_line = type_line_ })
+    Json.Decode.map5 (\color_ cmc_ name_ type_line_ image_uri_ -> { color = color_, cmc = cmc_, name = name_, type_line = type_line_, image_uri = image_uri_ })
         (Json.Decode.map (Maybe.withDefault "") <| Json.Decode.maybe <| Json.Decode.field "colors" colorsDecode)
         (Json.Decode.map String.fromInt <| Json.Decode.field "cmc" Json.Decode.int)
         (Json.Decode.field "name" string)
         (Json.Decode.map typeClosure <| Json.Decode.field "type_line" string)
+        (Json.Decode.field "image_uris" <| Json.Decode.field "png" string)
 
 
 typeClosure : String -> String
