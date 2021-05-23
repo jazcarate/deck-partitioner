@@ -15,21 +15,85 @@ import Set
 import String
 
 
-type alias Partitioner a =
-    { pfunc : a -> String, pname : String }
+type Partitioner
+    = ByName
+    | ByManaValue
+    | ByColor
+    | ByLandness
+    | ByType
+    | ByColorness
 
 
-classifyOn : Partitioner a -> List a -> List (List a)
+pname : Partitioner -> String
+pname part =
+    "by "
+        ++ (case part of
+                ByName ->
+                    "name"
+
+                ByManaValue ->
+                    "mana value"
+
+                ByColor ->
+                    "color"
+
+                ByLandness ->
+                    "land/non-land"
+
+                ByType ->
+                    "type"
+
+                ByColorness ->
+                    "mono/multi color"
+           )
+
+
+pfunc : Partitioner -> Card -> String
+pfunc part =
+    case part of
+        ByName ->
+            .name
+
+        ByManaValue ->
+            .cmc
+
+        ByColor ->
+            .color
+
+        ByLandness ->
+            landiness
+
+        ByType ->
+            .type_line
+
+        ByColorness ->
+            colorness
+
+
+pshow : Partitioner -> Card -> Html msg
+pshow part c =
+    case part of
+        ByName ->
+            em [ class "tooltip" ]
+                [ text <| c.name
+                , span [ class "tooltiptext" ] [ img [ src c.image_uri, attribute "loading" "lazy" ] [] ]
+                ]
+
+        _ ->
+            text <| pfunc part c
+
+
+classifyOn : Partitioner -> List Card -> List (List Card)
 classifyOn field =
     let
         classification a b =
-            field.pfunc a == field.pfunc b
+            pfunc field a == pfunc field b
     in
     Partition.classifyBy classification
-        >> List.map (List.sortBy field.pfunc)
+        >> List.map (List.sortBy (pfunc field))
 
 
-partition : Partitioner a -> Partition a -> Partition a
+partition : Partitioner -> Partition Card -> Partition Card
 partition field p =
     case p of
         One ps ->
@@ -48,12 +112,15 @@ unlines ls =
     List.foldr (\x y -> x ++ "\n" ++ y) "" ls
 
 
-showCard : Card -> Html msg
-showCard c =
-    em [ class "tooltip" ]
-        [ text <| c.name
-        , span [ class "tooltiptext" ] [ img [ src c.image_uri, attribute "loading" "lazy" ] [] ]
-        ]
+showCard : List Partitioner -> Card -> Html msg
+showCard parts c =
+    if List.isEmpty parts then
+        text "a card"
+
+    else
+        List.map (\p -> pshow p c) parts
+            |> List.intersperse (text " | ")
+            |> span []
 
 
 deckExample : String
@@ -104,7 +171,6 @@ viewInner model =
                 [ button [ onClick Edit ] [ text "<< Edit" ]
                 , div []
                     [ span [] <| List.indexedMap viewPartition model.partition
-                    , span [] [ text "by name" ]
                     ]
                 , div [] [ button [ onClick (Partitions PAdd) ] [ text "add partition" ] ]
                 , div [] [ button [ onClick FindBest ] [ text "Find best partition" ], text "(this will take a while)" ]
@@ -115,16 +181,16 @@ viewInner model =
 
                     else
                         [ text <| "complete!" ]
-                , showPartition tree
+                , showPartition model.partition tree
                 ]
 
 
-viewPartition : Int -> Partitioner Card -> Html Msg
+viewPartition : Int -> Partitioner -> Html Msg
 viewPartition i p =
     span []
         [ Html.select
             []
-            (List.map (\this -> viewOption i (p.pname == this.pname) this) partitions)
+            (List.map (\this -> viewOption i (p == this) this) partitions)
         , button [ onClick (Partitions (PRemove i)) ] [ text "🗑" ]
         ]
 
@@ -172,25 +238,21 @@ select list =
             ( x, xs ) :: List.map (\( y, ys ) -> ( y, x :: ys )) (select xs)
 
 
-viewOption : Int -> Bool -> Partitioner Card -> Html Msg
+viewOption : Int -> Bool -> Partitioner -> Html Msg
 viewOption i sel p =
     option
         [ onClick (Partitions (PChange i p)), selected sel ]
-        [ text <| p.pname ]
+        [ text <| pname p ]
 
 
-partitionBy : List (Partitioner Card) -> List Card -> Partition Card
+partitionBy : List Partitioner -> List Card -> Partition Card
 partitionBy pts cards =
-    let
-        allPts =
-            List.append pts [ namePartition ]
-    in
-    List.foldl partition (One cards) allPts
+    List.foldl partition (One cards) pts
 
 
-showPartition : Partition Card -> Html msg
-showPartition p =
-    Partition.renderPartition showCard p
+showPartition : List Partitioner -> Partition Card -> Html msg
+showPartition parts p =
+    Partition.renderPartition (showCard parts) p
         |> List.map (div [] << List.singleton)
         |> Html.pre []
 
@@ -201,7 +263,7 @@ type Status
 
 
 type alias PartitionModel =
-    List (Partitioner Card)
+    List Partitioner
 
 
 type alias Model =
@@ -226,7 +288,7 @@ type Msg
 type PartitionMsg
     = PAdd
     | PRemove Int
-    | PChange Int (Partitioner Card)
+    | PChange Int Partitioner
 
 
 type alias MultiResult error value =
@@ -376,23 +438,28 @@ subtract a b =
     List.filter (\x -> not <| List.member x b) a
 
 
-defaultPartition : Partitioner Card
+defaultPartition : Partitioner
 defaultPartition =
-    { pfunc = .cmc, pname = "by mana value" }
+    ByManaValue
 
 
-namePartition : Partitioner Card
+namePartition : Partitioner
 namePartition =
-    { pfunc = .name, pname = "by name" }
+    ByName
 
 
-partitions : List (Partitioner Card)
+partitions : List Partitioner
 partitions =
-    [ defaultPartition
-    , { pfunc = .color, pname = "by color" }
-    , { pfunc = .type_line, pname = "by type" }
-    , { pfunc = landiness, pname = "land/non-land" }
-    , { pfunc = colorness, pname = "mono/multi colored" }
+    ByName :: partitionsWithoutName
+
+
+partitionsWithoutName : List Partitioner
+partitionsWithoutName =
+    [ ByManaValue
+    , ByColor
+    , ByLandness
+    , ByType
+    , ByColorness
     ]
 
 
@@ -513,13 +580,14 @@ update msg model =
             ( { model | errors = Errors.add "Shoudnt have gootten a message in this state" model.errors }, Cmd.none )
 
 
-findBestPartition : Model -> List (Partitioner Card)
+findBestPartition : Model -> List Partitioner
 findBestPartition model =
     let
         cards =
             lookupCards model.db model.deck
     in
-    (\x -> List.concatMap subsequences (permutations x)) partitions
+    (\x -> List.concatMap subsequences (permutations x)) partitionsWithoutName
+        |> List.map (\p -> p ++ [ namePartition ])
         |> List.sortBy (\parts -> Partition.cost <| partitionBy parts cards)
         |> List.head
         |> Maybe.withDefault []
