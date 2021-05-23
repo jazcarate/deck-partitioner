@@ -583,7 +583,7 @@ landiness : Card -> String
 landiness c =
     case c.type_line of
         "Land" ->
-            "Land"
+            "Land    "
 
         _ ->
             "Non-Land"
