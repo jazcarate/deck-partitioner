@@ -4,7 +4,7 @@ import Browser
 import Dict exposing (Dict)
 import Errors exposing (Errors)
 import Html exposing (..)
-import Html.Attributes exposing (attribute, class, href, placeholder, rows, selected, src, style, title, type_, value)
+import Html.Attributes exposing (attribute, class, href, placeholder, rows, selected, src, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, field, string)
@@ -207,8 +207,8 @@ view m =
         [ h1 [] [ text "Deck partitioner" ]
         , p []
             [ text "Companion app for post: “"
-            , a [ href "http://blog.florius.com.ar/" ] [ text "Deckchecks, Heuristics and Decision Trees" ]
-            , text "”"
+            , a [ href "http://blog.florius.com.ar/mtg/2021/04/11/deckchecks-heuristics-and-decision-trees/" ] [ text "Deckchecks, Heuristics and Decision Trees" ]
+            , text "”."
             ]
         , viewInner m
         , if Errors.isEmpty m.errors then
@@ -220,6 +220,12 @@ view m =
                 , h3 [] [ text "Errors" ]
                 , ul [] (List.map (\l -> li [] [ text l ]) (Errors.toStrings m.errors))
                 ]
+        , br [] []
+        , em []
+            [ text "If you find an issues or what to request a change, feel free to do so in "
+            , a [ target "_blank", href "https://github.com/jazcarate/deck-partitioner" ] [ text "GitHub :: jazcarate/deck-partitioner" ]
+            , text "."
+            ]
         ]
 
 
