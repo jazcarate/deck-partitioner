@@ -4,7 +4,7 @@ import Browser
 import Dict exposing (Dict)
 import Errors exposing (Errors)
 import Html exposing (..)
-import Html.Attributes exposing (attribute, class, height, placeholder, selected, src, style, type_, value)
+import Html.Attributes exposing (attribute, class, classList, height, placeholder, selected, src, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, field, string)
@@ -58,7 +58,7 @@ pfunc part =
             .cmc
 
         ByColor ->
-            .color
+            .color >> String.concat
 
         ByLandness ->
             landiness
@@ -70,17 +70,58 @@ pfunc part =
             colorness
 
 
-pshow : Partitioner -> Card -> Html msg
-pshow part c =
+porder : Partitioner -> Int
+porder part =
     case part of
         ByName ->
-            em [ class "tooltip" ]
-                [ text <| c.name
-                , span [ class "tooltiptext" ] [ img [ src c.image_uri, attribute "loading" "lazy" ] [] ]
-                ]
+            1
 
         _ ->
-            text <| pfunc part c
+            -1
+
+
+pshow : Partitioner -> Card -> Html msg
+pshow part c =
+    span [ title (pname part ++ ": " ++ pfunc part c) ] <|
+        case part of
+            ByName ->
+                [ em [ class "tooltip" ]
+                    [ text <| c.name
+                    , span [ class "tooltiptext" ] [ img [ src c.image_uri, attribute "loading" "lazy" ] [] ]
+                    ]
+                ]
+
+            ByColor ->
+                let
+                    colors =
+                        case c.color of
+                            [] ->
+                                [ "c" ]
+
+                            cc ->
+                                cc
+                in
+                List.map (\color -> span [ class "ms", class "ms-cost", class ("ms-" ++ String.toLower color) ] []) colors
+
+            ByManaValue ->
+                [ span [ class "ms", class ("ms-" ++ c.cmc) ] [] ]
+
+            ByType ->
+                List.map (\t -> span [ class "ms", class "ms-fw", class ("ms-" ++ String.toLower t) ] []) (String.split " " c.type_line)
+
+            ByColorness ->
+                let
+                    multi =
+                        if colorness c == "multicolor" then
+                            [ class "ms-duo-color", class "ms-grad" ]
+
+                        else
+                            []
+                in
+                [ span ([ class "ms", class "ms-multicolor", class "ms-duo" ] ++ multi) [] ]
+
+            _ ->
+                [ text <| pfunc part c ]
 
 
 classifyOn : Partitioner -> List Card -> List (List Card)
@@ -104,7 +145,7 @@ partition field p =
 
 
 type alias Card =
-    { color : String, cmc : String, name : String, type_line : String, image_uri : String }
+    { color : List String, cmc : String, name : String, type_line : String, image_uri : String }
 
 
 unlines : List String -> String
@@ -118,8 +159,10 @@ showCard parts c =
         text "a card"
 
     else
-        List.map (\p -> pshow p c) parts
-            |> List.intersperse (text " | ")
+        parts
+            |> List.sortBy porder
+            |> List.map (\p -> pshow p c)
+            |> List.intersperse (text " ")
             |> span []
 
 
@@ -405,14 +448,38 @@ loadCard name =
         }
 
 
-cardDecoder : Decoder Card
-cardDecoder =
-    Json.Decode.map5 (\color_ cmc_ name_ type_line_ image_uri_ -> { color = color_, cmc = cmc_, name = name_, type_line = type_line_, image_uri = image_uri_ })
-        (Json.Decode.map (Maybe.withDefault "") <| Json.Decode.maybe <| Json.Decode.field "colors" colorsDecode)
-        (Json.Decode.map String.fromInt <| Json.Decode.field "cmc" Json.Decode.int)
+type alias OneFaceCard =
+    { color : List String, name : String, type_line : String, image_uri : String }
+
+
+oneFaceCardDecoder : Decoder OneFaceCard
+oneFaceCardDecoder =
+    Json.Decode.map4 (\color_ name_ type_line_ image_uri_ -> { color = color_, name = name_, type_line = type_line_, image_uri = image_uri_ })
+        (Json.Decode.map (Maybe.withDefault []) <| Json.Decode.maybe <| Json.Decode.field "colors" colorsDecode)
         (Json.Decode.field "name" string)
         (Json.Decode.map typeClosure <| Json.Decode.field "type_line" string)
         (Json.Decode.field "image_uris" <| Json.Decode.field "png" string)
+
+
+multiFaceCardDecoder : Decoder OneFaceCard
+multiFaceCardDecoder =
+    Json.Decode.andThen
+        (\faces ->
+            case faces of
+                [] ->
+                    Json.Decode.fail "is not multi faced"
+
+                face :: _ ->
+                    Json.Decode.succeed face
+        )
+        (Json.Decode.field "card_faces" (Json.Decode.list oneFaceCardDecoder))
+
+
+cardDecoder : Decoder Card
+cardDecoder =
+    Json.Decode.map2 (\cmc_ of_ -> { color = of_.color, cmc = cmc_, name = of_.name, type_line = of_.type_line, image_uri = of_.image_uri })
+        (Json.Decode.map String.fromInt <| Json.Decode.field "cmc" Json.Decode.int)
+        (Json.Decode.oneOf [ multiFaceCardDecoder, oneFaceCardDecoder ])
 
 
 typeClosure : String -> String
@@ -427,10 +494,10 @@ typeClosure type_line =
             |> Maybe.withDefault type_line
 
 
-colorsDecode : Decoder String
+colorsDecode : Decoder (List String)
 colorsDecode =
     Json.Decode.list string
-        |> Json.Decode.map (List.sort >> String.concat)
+        |> Json.Decode.map List.sort
 
 
 subtract : List comparable -> List comparable -> List comparable
@@ -475,7 +542,7 @@ landiness c =
 
 colorness : Card -> String
 colorness c =
-    if String.length c.color > 1 then
+    if List.length c.color > 1 then
         "multicolor"
 
     else
