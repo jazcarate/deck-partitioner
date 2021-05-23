@@ -1,6 +1,6 @@
 module Partition exposing (..)
 
-import Html exposing (Html, span, text)
+import Html exposing (Html, text)
 import Html.Attributes exposing (title)
 
 

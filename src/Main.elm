@@ -4,7 +4,7 @@ import Browser
 import Dict exposing (Dict)
 import Errors exposing (Errors)
 import Html exposing (..)
-import Html.Attributes exposing (attribute, class, classList, height, placeholder, selected, src, style, title, type_, value)
+import Html.Attributes exposing (attribute, class, href, placeholder, rows, selected, src, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, field, string)
@@ -179,7 +179,13 @@ deckExample =
 view : Model -> Html Msg
 view m =
     div []
-        [ viewInner m
+        [ h1 [] [ text "Deck partitioner" ]
+        , p []
+            [ text "Companion app for post: “"
+            , a [ href "http://blog.florius.com.ar/" ] [ text "Deckchecks, Heuristics and Decision Trees" ]
+            , text "”"
+            ]
+        , viewInner m
         , if Errors.isEmpty m.errors then
             span [] []
 
@@ -197,8 +203,15 @@ viewInner model =
     case model.status of
         Editting ->
             form [ onSubmit LoadCards ]
-                [ textarea [ placeholder deckExample, value model.content, onInput Change ] []
-                , button [ type_ "submit" ] [ text "Load" ]
+                [ button [ type_ "submit" ] [ text "Load" ]
+                , textarea
+                    [ placeholder "Write or paste here your favourite deck to partition"
+                    , value model.content
+                    , style "width" "100%"
+                    , rows 30
+                    , onInput Change
+                    ]
+                    []
                 ]
 
         Showing ->
@@ -211,21 +224,32 @@ viewInner model =
                     partitionBy model.partition cards
             in
             div []
-                [ button [ onClick Edit ] [ text "<< Edit" ]
-                , div []
-                    [ span [] <| List.indexedMap viewPartition model.partition
-                    ]
-                , div [] [ button [ onClick (Partitions PAdd) ] [ text "add partition" ] ]
-                , div [] [ button [ onClick FindBest ] [ text "Find best partition" ], text "(this will take a while)" ]
-                , div [] [ text <| "Total cost: " ++ String.fromFloat (Partition.cost tree) ]
+                [ button [ onClick Edit ] [ text "<< Change deck" ]
                 , span [] <|
                     if List.length cards < List.length model.deck then
-                        [ text <| "missing " ++ String.fromInt (List.length model.deck - List.length cards) ++ " cards" ]
+                        [ text <| "❌ Missing " ++ String.fromInt (List.length model.deck - List.length cards) ++ " card(s)" ]
 
                     else
-                        [ text <| "complete!" ]
+                        []
+                , div []
+                    [ viewPartitions model.partition
+                    , button [ onClick (Partitions PAdd) ] [ text "➕" ]
+                    ]
+                , div [] [ button [ onClick FindBest ] [ text "Find best partition ", em [] [ text "(this will take a while)" ] ] ]
                 , showPartition model.partition tree
+                , div [] [ text <| "Total cost: ", strong [] [ text <| String.fromFloat (Partition.cost tree) ] ]
                 ]
+
+
+viewPartitions : PartitionModel -> Html Msg
+viewPartitions parts =
+    span [] <|
+        if List.isEmpty parts then
+            [ text "Add partitions 👉" ]
+
+        else
+            List.indexedMap viewPartition parts
+                |> List.intersperse (text " > ")
 
 
 viewPartition : Int -> Partitioner -> Html Msg
@@ -297,7 +321,7 @@ showPartition : List Partitioner -> Partition Card -> Html msg
 showPartition parts p =
     Partition.renderPartition (showCard parts) p
         |> List.map (div [] << List.singleton)
-        |> Html.pre []
+        |> Html.pre [ style "cursor" "default" ]
 
 
 type Status

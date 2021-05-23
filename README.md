@@ -5,6 +5,4 @@
 1. `$ npm run start`
 
 ## TODO
-1. Text area más grande
-2. desciprción
-3. algo de estilo?
+1. "stepper" o algo similar para hacer el algoritmo un poco más performante

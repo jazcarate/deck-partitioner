@@ -8,10 +8,49 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link href="//cdn.jsdelivr.net/npm/mana-font@latest/css/mana.css" rel="stylesheet" type="text/css" />
     <style>
-        /* Tooltip container */
+        body {
+            margin: 5% auto;
+            background: #f2f2f2;
+            color: #444444;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            text-shadow: 0 1px 0 #ffffff;
+            max-width: 73%;
+        }
+
+        code {
+            background: white;
+        }
+
+        a {
+            border-bottom: 1px solid #444444;
+            color: #444444;
+            text-decoration: none;
+        }
+
+        a:hover {
+            border-bottom: 0;
+        }
+
+        button {
+            text-decoration: none;
+            background: #ffffff;
+            padding: 7px 20px;
+            border: 4px solid #494949;
+            display: inline-block;
+            transition: all 0.1s ease 0s;
+        }
+
+        button:hover {
+            color: #494949 ;
+            background: palevioletred;
+            transition: all 0.1s ease 0s;
+        }
+
         .tooltip {
             position: relative;
             display: inline-block;
+            text-decoration: underline;
+            text-decoration-style: dotted;
         }
 
         .tooltip .tooltiptext {
@@ -31,6 +70,15 @@
 
         .tooltip:hover .tooltiptext {
             visibility: visible;
+        }
+
+        .ms {
+            line-height: 0.8em;
+            font-size: small;
+        }
+
+        .ms.ms-cost {
+            font-size: 0.65em;
         }
     </style>
 </head>
