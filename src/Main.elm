@@ -541,6 +541,7 @@ typeClosure type_line =
             |> List.head
             |> Maybe.map String.trim
             |> Maybe.withDefault type_line
+            |> String.replace "Legendary " ""
 
 
 colorsDecode : Decoder (List String)
