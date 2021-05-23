@@ -48,6 +48,31 @@ pname part =
            )
 
 
+pname_ : String -> Partitioner
+pname_ s =
+    case s of
+        "by name" ->
+            ByName
+
+        "by mana value" ->
+            ByManaValue
+
+        "by color" ->
+            ByColor
+
+        "by land/non-land" ->
+            ByLandness
+
+        "by type" ->
+            ByType
+
+        "by mono/multi color" ->
+            ByColorness
+
+        _ ->
+            ByName
+
+
 pfunc : Partitioner -> Card -> String
 pfunc part =
     case part of
@@ -256,8 +281,8 @@ viewPartition : Int -> Partitioner -> Html Msg
 viewPartition i p =
     span []
         [ Html.select
-            []
-            (List.map (\this -> viewOption i (p == this) this) partitions)
+            [ onInput (\newP -> Partitions (PChange i (pname_ newP))) ]
+            (List.map (\this -> viewOption (p == this) this) partitions)
         , button [ onClick (Partitions (PRemove i)) ] [ text "🗑" ]
         ]
 
@@ -305,10 +330,10 @@ select list =
             ( x, xs ) :: List.map (\( y, ys ) -> ( y, x :: ys )) (select xs)
 
 
-viewOption : Int -> Bool -> Partitioner -> Html Msg
-viewOption i sel p =
+viewOption : Bool -> Partitioner -> Html Msg
+viewOption sel p =
     option
-        [ onClick (Partitions (PChange i p)), selected sel ]
+        [ value <| pname p, selected sel ]
         [ text <| pname p ]
 
 
